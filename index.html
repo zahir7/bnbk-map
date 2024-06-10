@@ -119,20 +119,32 @@
 
     function clearSelection() {
         if (selectedShape) {
-            if (selectedShape.type !== undefined && selectedShape.type !== 'marker') {
-                selectedShape.setEditable(false);
+            if (selectedShape.type !== undefined) {
+                if (selectedShape.type !== 'marker') {
+                    selectedShape.setEditable(false);
+                }
             }
             selectedShape = null;
+        }
+
+        for (var i = 0; i < all_overlays.length; i++) {
+            if (all_overlays[i].type === google.maps.drawing.OverlayType.MARKER) {
+                all_overlays[i].overlay.setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png'); // 마커의 아이콘을 기본 아이콘으로 변경
+            }
         }
     }
 
     function setSelection(shape) {
         clearSelection();
         selectedShape = shape;
+
         if (selectedShape.type !== undefined && selectedShape.type !== 'marker') {
             selectedShape.setEditable(true);
+            selectColor(shape.get('fillColor') || shape.get('strokeColor'));
+        } else {
+            selectedShape.setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png'); // 마커의 색상 변경
         }
-        selectColor(shape.get('fillColor') || shape.get('strokeColor'));
+
     }
 
     function deleteSelectedShape() {
@@ -357,7 +369,8 @@
         drawingManager = new google.maps.drawing.DrawingManager({
             drawingControl: false,
             markerOptions: {
-                draggable: true
+                draggable: true,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' // 마커의 기본 아이콘 설정
             },
             polylineOptions: {
                 editable: true,
@@ -382,6 +395,15 @@
             } else {
                 google.maps.event.addListener(e.overlay, 'click', function () {
                     setSelection(e.overlay);
+                });
+
+                google.maps.event.addListener(e.overlay, 'dragstart', function () {
+                    clearSelection();
+                    e.overlay.setIcon('http://maps.google.com/mapfiles/ms/icons/yellow-dot.png'); // 드래그 중일 때 아이콘 변경
+                });
+                google.maps.event.addListener(e.overlay, 'dragend', function () {
+                    e.overlay.setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png'); // 드래그 끝났을 때 아이콘 변경
+                    setSelection(e.overlay); // 드래그 끝나면 선택 상태로 설정
                 });
             }
             printOverlayData();
@@ -460,7 +482,8 @@
                     return latLng.toJSON();
                 }) : null,
                 radius: overlay.radius || null,
-                bounds: overlay.getBounds ? overlay.getBounds().toJSON() : null
+                bounds: overlay.getBounds ? overlay.getBounds().toJSON() : null,
+                color: (overlay.get('fillColor') || overlay.get('strokeColor')) || null
             };
             overlayData.push(data);
         }
@@ -469,8 +492,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
